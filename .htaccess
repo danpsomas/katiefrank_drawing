@@ -1,0 +1,9 @@
+php_value error_reporting 0
+php_flag display_errors on
+php_flag html_errors on
+php_value session.gc_maxlifetime 8400
+php_value upload_max_filesize 50M
+php_value post_max_size 50M
+php_flag short_open_tag On
+php_value include_path ".:/var/www/drawing.katiefrank.com/public_html/include/:/var/www/katiefrank.com/public_html/admin/include/"
+RedirectMatch 404 "/\.git"

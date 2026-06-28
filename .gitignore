@@ -1,0 +1,15 @@
+# Sensitive local configuration
+include/db_ini.php
+include/ini.php
+.vscode/sftp.json
+
+# Logs
+*.log
+email/email_log.txt
+
+# Uploaded/generated drawing images
+drawings/**/*.jpg
+drawings/**/*.jpeg
+drawings/**/*.png
+drawings/**/*.gif
+drawings/**/*.webp
