@@ -6,13 +6,19 @@ class drawing
     private DateTimeImmutable $monthStart;
     private DateTimeImmutable $monthEnd;
     private array $thumbnailsByDate;
+    private ?mysqli $mysqli;
+    private bool $includeHidden;
 
-    public function __construct(?string $month = null, array $thumbnailsByDate = [])
+    public function __construct(?string $month = null, ?array $thumbnailsByDate = null, bool $includeHidden = false)
     {
+        global $mysqli;
+
+        $this->mysqli = $mysqli instanceof mysqli ? $mysqli : null;
+        $this->includeHidden = $includeHidden;
         $this->today = new DateTimeImmutable('today');
         $this->monthStart = $this->resolveMonthStart($month);
         $this->monthEnd = $this->monthStart->modify('last day of this month');
-        $this->thumbnailsByDate = $thumbnailsByDate;
+        $this->thumbnailsByDate = $thumbnailsByDate ?? $this->loadThumbnailsByDate();
     }
 
     public function getMonthTitle(): string
@@ -81,6 +87,11 @@ class drawing
     private function buildDateCell(DateTimeImmutable $date): array
     {
         $dateKey = $date->format('Y-m-d');
+        $thumbnails = $this->thumbnailsByDate[$dateKey] ?? [];
+
+        if (!$this->includeHidden) {
+            $thumbnails = array_slice($thumbnails, 0, 4);
+        }
 
         return [
             'date' => $date,
@@ -88,8 +99,68 @@ class drawing
             'day' => $date->format('j'),
             'weekday' => $date->format('D'),
             'fullDate' => $date->format('F j'),
-            'thumbnails' => array_slice($this->thumbnailsByDate[$dateKey] ?? [], 0, 4),
+            'thumbnails' => $thumbnails,
             'isToday' => $dateKey === $this->today->format('Y-m-d'),
         ];
+    }
+
+    private function loadThumbnailsByDate(): array
+    {
+        if (!$this->mysqli || $this->mysqli->connect_errno) {
+            error_log('Drawing calendar database connection is unavailable.');
+            return [];
+        }
+
+        $startDate = $this->monthStart->format('Y-m-d');
+        $nextMonthDate = $this->monthStart->modify('+1 month')->format('Y-m-d');
+        $hiddenClause = $this->includeHidden ? '' : 'AND hidden IS NULL';
+        $sql = "
+            SELECT DID, orig_name, DATE(display_date) AS display_date, filename, hidden
+            FROM drawing
+            WHERE display_date >= ?
+                AND display_date < ?
+                AND filename IS NOT NULL
+                AND filename != ''
+                {$hiddenClause}
+            ORDER BY display_date ASC, DID ASC
+        ";
+
+        $statement = $this->mysqli->prepare($sql);
+        if (!$statement) {
+            error_log('Drawing calendar query prepare failed: ' . $this->mysqli->error);
+            return [];
+        }
+
+        $statement->bind_param('ss', $startDate, $nextMonthDate);
+        if (!$statement->execute()) {
+            error_log('Drawing calendar query failed: ' . $statement->error);
+            $statement->close();
+            return [];
+        }
+
+        $statement->bind_result($did, $origName, $displayDate, $filename, $hidden);
+        $thumbnailsByDate = [];
+
+        while ($statement->fetch()) {
+            if ($this->includeHidden) {
+                $thumbnailsByDate[$displayDate][] = [
+                    'DID' => (int) $did,
+                    'origName' => $origName,
+                    'displayDate' => $displayDate,
+                    'filename' => $filename,
+                    'hidden' => $hidden,
+                    'isHidden' => $hidden !== null && $hidden !== '',
+                    'thumbPath' => 'drawings/thumbs/' . $filename,
+                    'sizedPath' => 'drawings/sized/1200_1200.' . $filename,
+                ];
+                continue;
+            }
+
+            $thumbnailsByDate[$displayDate][] = 'drawings/thumbs/' . $filename;
+        }
+
+        $statement->close();
+
+        return $thumbnailsByDate;
     }
 }

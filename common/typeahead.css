@@ -1,0 +1,17 @@
+.typeahead_results{
+	position: absolute;
+	z-index: 2000;
+	background: #fff;
+	padding: 4px 0;
+	box-shadow: 4px 4px 4px rgba(0,0,0,0.5);
+	max-height: 400px;
+	overflow-y: auto;
+}
+
+.typeahead_results > div{
+	padding: 3px 6px;
+	cursor: pointer;
+}
+.auto_select_hilite_current{
+	background: #e9f2f7;
+}

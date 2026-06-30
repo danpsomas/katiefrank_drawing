@@ -1,15 +1,8 @@
 <?php
+require_once __DIR__ . '/include/db_connect.php';
 require_once __DIR__ . '/include/classes/class.drawing.php';
 
-// Add thumbnail URLs here using dates in YYYY-MM-DD format.
-$thumbnailsByDate = [
-    // '2026-06-01' => [
-    //     '/images/example-1.jpg',
-    //     '/images/example-2.jpg',
-    // ],
-];
-
-$calendar = new drawing($_GET['month'] ?? null, $thumbnailsByDate);
+$calendar = new drawing($_GET['month'] ?? null);
 $monthTitle = $calendar->getMonthTitle();
 ?>
 <!doctype html>
@@ -19,6 +12,7 @@ $monthTitle = $calendar->getMonthTitle();
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?php echo htmlspecialchars($monthTitle, ENT_QUOTES, 'UTF-8'); ?> Drawings</title>
     <link rel="stylesheet" href="common/style.css">
+    <script src="js/calendar-modal.js" defer></script>
 </head>
 <body>
     <main class="calendar-page">
@@ -45,20 +39,28 @@ $monthTitle = $calendar->getMonthTitle();
                     <?php continue; ?>
                 <?php endif; ?>
 
-                <article class="date-card<?php echo $cell['isToday'] ? ' date-card--today' : ''; ?>">
+                <?php $thumbnailCount = count($cell['thumbnails']); ?>
+                <article class="date-card<?php echo $cell['isToday'] ? ' date-card--today' : ''; ?><?php echo $thumbnailCount > 0 ? ' date-card--has-thumbnails date-card--thumbnail-count-' . $thumbnailCount : ''; ?>">
                     <div class="date-card__header">
                         <span class="date-card__weekday"><?php echo $cell['weekday']; ?></span>
                         <time datetime="<?php echo $cell['dateKey']; ?>"><?php echo $cell['day']; ?></time>
                     </div>
 
                     <?php if ($cell['thumbnails']): ?>
-                        <div class="thumbnail-grid" aria-label="Drawings for <?php echo htmlspecialchars($cell['fullDate'], ENT_QUOTES, 'UTF-8'); ?>">
+                        <div class="thumbnail-grid thumbnail-grid--count-<?php echo $thumbnailCount; ?>" aria-label="Drawings for <?php echo htmlspecialchars($cell['fullDate'], ENT_QUOTES, 'UTF-8'); ?>">
                             <?php foreach ($cell['thumbnails'] as $index => $thumb): ?>
-                                <img
-                                    src="<?php echo htmlspecialchars($thumb, ENT_QUOTES, 'UTF-8'); ?>"
-                                    alt="Drawing thumbnail <?php echo $index + 1; ?> for <?php echo htmlspecialchars($cell['fullDate'], ENT_QUOTES, 'UTF-8'); ?>"
-                                    loading="lazy"
+                                <?php $imageAlt = 'Drawing ' . ($index + 1) . ' for ' . $cell['fullDate']; ?>
+                                <a
+                                    href="drawings/sized/1200_1200.<?php echo htmlspecialchars(basename($thumb), ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-modal-image
+                                    data-modal-alt="<?php echo htmlspecialchars($imageAlt, ENT_QUOTES, 'UTF-8'); ?>"
                                 >
+                                    <img
+                                        src="<?php echo htmlspecialchars($thumb, ENT_QUOTES, 'UTF-8'); ?>"
+                                        alt="<?php echo htmlspecialchars($imageAlt, ENT_QUOTES, 'UTF-8'); ?>"
+                                        loading="lazy"
+                                    >
+                                </a>
                             <?php endforeach; ?>
                         </div>
                     <?php else: ?>
@@ -68,5 +70,12 @@ $monthTitle = $calendar->getMonthTitle();
             <?php endforeach; ?>
         </section>
     </main>
+
+    <div class="image-modal" data-image-modal role="dialog" aria-modal="true" aria-label="Drawing preview" hidden>
+        <button class="image-modal__close" type="button" data-image-modal-close aria-label="Close image preview">Close</button>
+        <button class="image-modal__nav image-modal__nav--previous" type="button" data-image-modal-previous aria-label="Previous drawing">Previous</button>
+        <img class="image-modal__image" src="" alt="" data-image-modal-image>
+        <button class="image-modal__nav image-modal__nav--next" type="button" data-image-modal-next aria-label="Next drawing">Next</button>
+    </div>
 </body>
 </html>

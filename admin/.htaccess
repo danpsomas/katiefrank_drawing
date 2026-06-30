@@ -1,0 +1,10 @@
+SetEnvIf Request_Method OPTIONS noauth=1
+
+php_value upload_max_filesize 20M
+php_value post_max_size 25M
+
+AuthUserFile /var/www/drawing.katiefrank.com/ppwds/.htpasswd
+AuthName "Drawing Admin"
+AuthType Basic
+Require valid-user
+Require env noauth

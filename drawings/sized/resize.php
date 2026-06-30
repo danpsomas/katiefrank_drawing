@@ -1,6 +1,6 @@
 <?php  
-
-define ('SAVE_IMG', FALSE);
+ini_set('memory_limit', '1024M');
+define ('SAVE_IMG', TRUE);
 $save = defined('SAVE_IMG') && SAVE_IMG;
 
 ob_start();
