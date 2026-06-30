@@ -148,9 +148,9 @@ $modalFormfield = new formfield([
 
         .admin-page .date-card.dz-drag-hover,
         .admin-page .date-card--uploading {
-            border-color: #b16d3a;
-            background: #fff4df;
-            box-shadow: 0 12px 30px rgba(177, 109, 58, 0.22);
+            border-color: var(--color-accent);
+            background: var(--color-date-bg);
+            box-shadow: 0 12px 30px var(--color-accent-shadow);
         }
 
         .admin-drop-hint {
@@ -158,7 +158,7 @@ $modalFormfield = new formfield([
             right: 12px;
             bottom: 10px;
             z-index: 1;
-            color: #9a8977;
+            color: var(--color-text-soft);
             font-size: 0.72rem;
             font-weight: 700;
             opacity: 0;
@@ -175,18 +175,18 @@ $modalFormfield = new formfield([
 
         .date-card.dz-drag-hover .admin-drop-hint,
         .date-card--uploading .admin-drop-hint {
-            color: #8a451b;
+            color: var(--color-link-hover);
         }
 
         .admin-upload-status {
             min-height: 1.4em;
             margin-top: 12px;
-            color: #7a6a59;
+            color: var(--color-text-muted);
             font-size: 0.9rem;
         }
 
         .admin-upload-status--error {
-            color: #8a1f11;
+            color: var(--color-text);
         }
 
         .admin-thumbnail--hidden {
@@ -199,8 +199,8 @@ $modalFormfield = new formfield([
             bottom: 5px;
             padding: 2px 6px;
             border-radius: 999px;
-            background: rgba(47, 42, 36, 0.76);
-            color: #fffaf2;
+            background: rgba(42, 42, 42, 0.76);
+            color: var(--color-surface);
             content: "Hidden";
             font-size: 0.65rem;
             font-weight: 700;
@@ -213,7 +213,7 @@ $modalFormfield = new formfield([
             display: grid;
             place-items: center;
             padding: 24px;
-            background: rgba(47, 42, 36, 0.82);
+            background: var(--color-modal-bg);
         }
 
         .admin-edit-modal[hidden] {
@@ -229,7 +229,7 @@ $modalFormfield = new formfield([
             overflow: auto;
             padding: 18px;
             border-radius: 20px;
-            background: #fffaf2;
+            background: var(--color-surface);
             box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
         }
 
@@ -238,7 +238,7 @@ $modalFormfield = new formfield([
             max-height: calc(100vh - 96px);
             border-radius: 16px;
             object-fit: contain;
-            background: #f5f1ea;
+            background: var(--color-page-bg);
         }
 
         .admin-edit-modal__form {
@@ -249,7 +249,7 @@ $modalFormfield = new formfield([
 
         .admin-edit-modal__title {
             margin: 0;
-            color: #4f3b28;
+            color: var(--color-link);
         }
 
         .admin-edit-modal__close {
@@ -259,12 +259,12 @@ $modalFormfield = new formfield([
 
         .admin-edit-modal__status {
             min-height: 1.3em;
-            color: #7a6a59;
+            color: var(--color-text-muted);
             font-size: 0.85rem;
         }
 
         .admin-edit-modal__status--error {
-            color: #8a1f11;
+            color: var(--color-text);
         }
 
         .admin-edit-modal .nifty_wrapper {
@@ -286,13 +286,13 @@ $modalFormfield = new formfield([
     <main class="admin-page">
         <header class="calendar-header">
             <div>
-                <p class="eyebrow">Drawing Calendar</p>
-                <h1><?php echo h($monthTitle); ?> Admin</h1>
+                <p class="eyebrow"><?php echo h($monthTitle); ?></p>
+                <h1>Drawing Calendar Admin</h1>
             </div>
 
             <nav class="calendar-nav" aria-label="Calendar months">
                 <a href="?month=<?php echo h($calendar->getPreviousMonthKey()); ?>">Previous</a>
-                <a href="../">View Calendar</a>
+                <a href="../?month=<?php echo h($calendar->getMonthKey()); ?>" target="_blank" rel="noopener">View Calendar</a>
                 <a href="?month=<?php echo h($calendar->getNextMonthKey()); ?>">Next</a>
             </nav>
         </header>
@@ -341,9 +341,6 @@ $modalFormfield = new formfield([
                         <?php endforeach; ?>
                     </div>
 
-                    <?php if (!$cell['thumbnails']): ?>
-                        <p class="date-card__empty">No drawings yet</p>
-                    <?php endif; ?>
                 </article>
             <?php endforeach; ?>
         </section>

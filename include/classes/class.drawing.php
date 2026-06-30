@@ -26,6 +26,11 @@ class drawing
         return $this->monthStart->format('F Y');
     }
 
+    public function getMonthKey(): string
+    {
+        return $this->monthStart->format('Y-m');
+    }
+
     public function getCalendarLabel(): string
     {
         return $this->getMonthTitle() . ' calendar';

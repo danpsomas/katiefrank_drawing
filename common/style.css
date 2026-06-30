@@ -2,11 +2,29 @@
     box-sizing: border-box;
 }
 
+:root {
+    --color-page-bg: #f1f1f1;
+    --color-surface: #fafafa;
+    --color-text: #2a2a2a;
+    --color-text-muted: #6d6d6d;
+    --color-text-soft: #888;
+    --color-link: #3d3d3d;
+    --color-link-hover: #565656;
+    --color-accent: #777;
+    --color-date-bg: #e5e5e5;
+    --color-border: rgba(56, 56, 56, 0.16);
+    --color-border-strong: rgba(56, 56, 56, 0.2);
+    --color-shadow: rgba(59, 59, 59, 0.08);
+    --color-accent-shadow: rgba(126, 126, 126, 0.22);
+    --color-modal-bg: rgba(42, 42, 42, 0.82);
+    --color-modal-control-bg: rgba(250, 250, 250, 0.9);
+}
+
 body {
     margin: 0;
     min-height: 100vh;
-    background: #f5f1ea;
-    color: #2f2a24;
+    background: var(--color-page-bg);
+    color: var(--color-text);
     font-family: Arial, Helvetica, sans-serif;
 }
 
@@ -31,7 +49,7 @@ img {
 
 .eyebrow {
     margin: 0 0 6px;
-    color: #8a6d4b;
+    color: var(--color-text-muted);
     font-size: 0.78rem;
     font-weight: 700;
     letter-spacing: 0.12em;
@@ -51,10 +69,10 @@ img {
 
 .calendar-nav a {
     padding: 10px 14px;
-    border: 1px solid rgba(72, 55, 36, 0.2);
+    border: 1px solid var(--color-border-strong);
     border-radius: 999px;
-    background: #fffaf2;
-    color: #4f3b28;
+    background: var(--color-surface);
+    color: var(--color-link);
     font-size: 0.9rem;
     font-weight: 700;
     text-decoration: none;
@@ -62,8 +80,8 @@ img {
 
 .calendar-nav a:hover,
 .calendar-nav a:focus {
-    border-color: #b16d3a;
-    color: #8a451b;
+    border-color: var(--color-accent);
+    color: var(--color-link-hover);
 }
 
 .month-grid {
@@ -73,7 +91,7 @@ img {
 }
 
 .weekday {
-    color: #7a6a59;
+    color: var(--color-text-muted);
     font-size: 0.8rem;
     font-weight: 700;
     text-align: center;
@@ -82,20 +100,23 @@ img {
 
 .date-card {
     display: flex;
-    min-height: 160px;
+    min-width: 0;
+    min-height: 0;
+    aspect-ratio: 1;
     flex-direction: column;
     gap: 0;
     padding: 12px;
-    border: 1px solid rgba(72, 55, 36, 0.16);
+    border: 1px solid var(--color-border);
     border-radius: 18px;
-    background: #fffaf2;
-    box-shadow: 0 12px 30px rgba(80, 57, 34, 0.08);
+    background: var(--color-surface);
+    box-shadow: 0 12px 30px var(--color-shadow);
+    overflow: hidden;
     position: relative;
 }
 
 .date-card--today {
-    border-color: #b16d3a;
-    box-shadow: 0 12px 30px rgba(177, 109, 58, 0.22);
+    border-color: var(--color-accent);
+    box-shadow: 0 12px 30px var(--color-accent-shadow);
 }
 
 .date-card--empty {
@@ -120,7 +141,7 @@ img {
 
 .date-card__weekday {
     display: none;
-    color: #8a6d4b;
+    color: var(--color-text-muted);
     font-size: 0.78rem;
     font-weight: 700;
     letter-spacing: 0.08em;
@@ -133,7 +154,7 @@ img {
     height: 32px;
     place-items: center;
     border-radius: 50%;
-    background: #efe4d4;
+    background: var(--color-date-bg);
     font-weight: 700;
 }
 
@@ -142,20 +163,20 @@ img {
     flex: 1;
     place-items: center;
     margin: 0;
-    border: 1px dashed rgba(72, 55, 36, 0.2);
+    border: 1px dashed var(--color-border-strong);
     border-radius: 14px;
-    color: #9a8977;
+    color: var(--color-text-soft);
     font-size: 0.9rem;
     text-align: center;
 }
 
 .thumbnail-grid {
     display: grid;
-    flex: 1;
-    width: 126px;
-    max-width: 100%;
-    grid-template-columns: repeat(2, 60px);
-    grid-template-rows: repeat(2, 60px);
+    flex: 0 0 auto;
+    width: min(126px, 100%);
+    aspect-ratio: 1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
     gap: 6px;
     align-content: end;
     align-self: start;
@@ -164,14 +185,14 @@ img {
 
 .thumbnail-grid a {
     display: block;
-    width: 60px;
-    height: 60px;
+    width: 100%;
+    height: 100%;
     border-radius: 12px;
     overflow: hidden;
 }
 
 .thumbnail-grid a:focus-visible {
-    outline: 3px solid #b16d3a;
+    outline: 3px solid var(--color-accent);
     outline-offset: 2px;
 }
 
@@ -183,8 +204,6 @@ img {
 }
 
 .thumbnail-grid--count-1 a:first-child {
-    width: 126px;
-    height: 126px;
     grid-column: 1 / 3;
     grid-row: 1 / 3;
 }
@@ -221,7 +240,7 @@ img {
     display: grid;
     place-items: center;
     padding: 24px;
-    background: rgba(47, 42, 36, 0.82);
+    background: var(--color-modal-bg);
 }
 
 .image-modal[hidden] {
@@ -244,8 +263,8 @@ img {
     padding: 10px 14px;
     border: 0;
     border-radius: 999px;
-    background: #fffaf2;
-    color: #4f3b28;
+    background: var(--color-surface);
+    color: var(--color-link);
     cursor: pointer;
     font-weight: 700;
 }
@@ -260,8 +279,8 @@ img {
     place-items: center;
     border: 0;
     border-radius: 50%;
-    background: rgba(255, 250, 242, 0.9);
-    color: #4f3b28;
+    background: var(--color-modal-control-bg);
+    color: var(--color-link);
     cursor: pointer;
     font-size: 0;
     font-weight: 700;
@@ -322,6 +341,7 @@ img {
     }
 
     .date-card {
+        aspect-ratio: auto;
         min-height: auto;
     }
 
@@ -331,6 +351,24 @@ img {
 
     .date-card--has-thumbnails .date-card__weekday {
         display: none;
+    }
+
+    .date-card--has-thumbnails .thumbnail-grid {
+        display: flex;
+        width: 100%;
+        aspect-ratio: auto;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 0;
+        padding-left: 44px;
+    }
+
+    .date-card--has-thumbnails .thumbnail-grid a {
+        flex: 0 0 72px;
+        width: 72px;
+        height: 72px;
+        grid-column: auto;
+        grid-row: auto;
     }
 
     .image-modal__nav--previous {

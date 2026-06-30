@@ -18,8 +18,8 @@ $monthTitle = $calendar->getMonthTitle();
     <main class="calendar-page">
         <header class="calendar-header">
             <div>
-                <p class="eyebrow">Drawing Calendar</p>
-                <h1><?php echo htmlspecialchars($monthTitle, ENT_QUOTES, 'UTF-8'); ?></h1>
+                <p class="eyebrow"><?php echo htmlspecialchars($monthTitle, ENT_QUOTES, 'UTF-8'); ?></p>
+                <h1>Drawing Calendar</h1>
             </div>
 
             <nav class="calendar-nav" aria-label="Calendar months">
@@ -63,8 +63,6 @@ $monthTitle = $calendar->getMonthTitle();
                                 </a>
                             <?php endforeach; ?>
                         </div>
-                    <?php else: ?>
-                        <p class="date-card__empty">No drawings yet</p>
                     <?php endif; ?>
                 </article>
             <?php endforeach; ?>
