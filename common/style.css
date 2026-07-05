@@ -56,6 +56,52 @@ img {
     text-transform: uppercase;
 }
 
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+}
+
+.calendar-date-picker {
+    display: flex;
+    align-items: baseline;
+    gap: 0.45em;
+}
+
+.calendar-date-picker__select {
+    margin: 0;
+    padding: 0 0.85em 0 0;
+    border: 0;
+    appearance: none;
+    background-color: transparent;
+    background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+        linear-gradient(135deg, currentColor 50%, transparent 50%);
+    background-position: calc(100% - 0.35em) 50%, calc(100% - 0.1em) 50%;
+    background-repeat: no-repeat;
+    background-size: 0.28em 0.28em, 0.28em 0.28em;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    font-weight: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+}
+
+.calendar-date-picker__select--year {
+    min-width: calc(4ch + 35px);
+}
+
+.calendar-date-picker__select:hover,
+.calendar-date-picker__select:focus {
+    color: var(--color-link-hover);
+    outline: 0;
+    text-decoration: underline;
+    text-underline-offset: 0.18em;
+}
+
 .calendar-header h1 {
     margin: 0;
     font-size: clamp(2rem, 5vw, 4rem);
@@ -85,12 +131,12 @@ img {
 }
 
 .month-grid {
-    display: grid;
-    grid-template-columns: repeat(7, minmax(0, 1fr));
-    gap: 12px;
+    display: flow-root;
+    margin-right: -12px;
 }
 
 .weekday {
+    display: none;
     color: var(--color-text-muted);
     font-size: 0.8rem;
     font-weight: 700;
@@ -100,9 +146,11 @@ img {
 
 .date-card {
     display: flex;
-    min-width: 0;
-    min-height: 0;
-    aspect-ratio: 1;
+    float: left;
+    width: calc(50% - 12px);
+    min-width: 500px;
+    min-height: auto;
+    margin: 0 12px 12px 0;
     flex-direction: column;
     gap: 0;
     padding: 12px;
@@ -120,6 +168,7 @@ img {
 }
 
 .date-card--empty {
+    display: none;
     background: transparent;
     border-color: transparent;
     box-shadow: none;
@@ -139,8 +188,12 @@ img {
     z-index: 2;
 }
 
-.date-card__weekday {
+.date-card--has-thumbnails .date-card__weekday {
     display: none;
+}
+
+.date-card__weekday {
+    display: inline;
     color: var(--color-text-muted);
     font-size: 0.78rem;
     font-weight: 700;
@@ -181,6 +234,28 @@ img {
     align-content: end;
     align-self: start;
     margin-top: auto;
+}
+
+.date-card:not(.date-card--has-thumbnails) .thumbnail-grid {
+    display: none;
+}
+
+.date-card--has-thumbnails .thumbnail-grid {
+    display: flex;
+    width: 100%;
+    aspect-ratio: auto;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 0;
+    padding-left: 44px;
+}
+
+.date-card--has-thumbnails .thumbnail-grid a {
+    flex: 0 0 100px;
+    width: 100px;
+    height: 100px;
+    grid-column: auto;
+    grid-row: auto;
 }
 
 .thumbnail-grid a {
@@ -313,6 +388,12 @@ img {
     opacity: 0.35;
 }
 
+@media (max-width: 1036px) {
+    .date-card {
+        width: calc(100% - 12px);
+    }
+}
+
 @media (max-width: 760px) {
     .calendar-page {
         width: min(100% - 24px, 620px);
@@ -333,6 +414,7 @@ img {
         display: flex;
         flex-direction: column;
         gap: 12px;
+        margin-right: 0;
     }
 
     .weekday,
@@ -341,34 +423,11 @@ img {
     }
 
     .date-card {
-        aspect-ratio: auto;
-        min-height: auto;
-    }
-
-    .date-card__weekday {
-        display: inline;
-    }
-
-    .date-card--has-thumbnails .date-card__weekday {
-        display: none;
-    }
-
-    .date-card--has-thumbnails .thumbnail-grid {
-        display: flex;
+        float: none;
         width: 100%;
-        aspect-ratio: auto;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-top: 0;
-        padding-left: 44px;
-    }
-
-    .date-card--has-thumbnails .thumbnail-grid a {
-        flex: 0 0 72px;
-        width: 72px;
-        height: 72px;
-        grid-column: auto;
-        grid-row: auto;
+        min-width: 0;
+        min-height: auto;
+        margin: 0;
     }
 
     .image-modal__nav--previous {

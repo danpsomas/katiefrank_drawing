@@ -8,7 +8,7 @@ ob_start();
 include 'classes/class.dp_image.php';
 
 $filename = preg_replace("/\?.*/", "", basename($_SERVER['REQUEST_URI']));
-
+$fit = 'crop';
 $width = 240;
 $height = 240;
 

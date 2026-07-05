@@ -51,6 +51,46 @@ class drawing
         return $this->monthStart->modify('+1 month')->format('Y-m');
     }
 
+    public function getSelectedMonthValue(): string
+    {
+        return $this->monthStart->format('m');
+    }
+
+    public function getSelectedYearValue(): string
+    {
+        return $this->monthStart->format('Y');
+    }
+
+    public function getMonthOptions(): array
+    {
+        $months = [];
+
+        for ($month = 1; $month <= 12; $month++) {
+            $date = DateTimeImmutable::createFromFormat('!m', sprintf('%02d', $month));
+            $months[$date->format('m')] = $date->format('F');
+        }
+
+        return $months;
+    }
+
+    public function getYearOptions(): array
+    {
+        $currentYear = (int) $this->today->format('Y');
+        $earliestYear = $this->loadEarliestDrawingYear() ?? $currentYear;
+
+        if ($earliestYear > $currentYear) {
+            $earliestYear = $currentYear;
+        }
+
+        $years = [];
+
+        for ($year = $earliestYear; $year <= $currentYear; $year++) {
+            $years[(string) $year] = (string) $year;
+        }
+
+        return $years;
+    }
+
     public function getCalendarCells(): array
     {
         $leadingEmptyDays = (int) $this->monthStart->format('N') - 1;
@@ -78,6 +118,40 @@ class drawing
         }
 
         return $calendarCells;
+    }
+
+    private function loadEarliestDrawingYear(): ?int
+    {
+        if (!$this->mysqli || $this->mysqli->connect_errno) {
+            error_log('Drawing calendar database connection is unavailable.');
+            return null;
+        }
+
+        $hiddenClause = $this->includeHidden ? '' : 'AND hidden IS NULL';
+        $sql = "
+            SELECT MIN(YEAR(display_date)) AS earliest_year
+            FROM drawing
+            WHERE display_date IS NOT NULL
+                AND filename IS NOT NULL
+                AND filename != ''
+                {$hiddenClause}
+        ";
+
+        $result = $this->mysqli->query($sql);
+
+        if (!$result) {
+            error_log('Drawing earliest year query failed: ' . $this->mysqli->error);
+            return null;
+        }
+
+        $row = $result->fetch_assoc();
+        $result->free();
+
+        if (!isset($row['earliest_year'])) {
+            return null;
+        }
+
+        return (int) $row['earliest_year'];
     }
 
     private function resolveMonthStart(?string $month): DateTimeImmutable

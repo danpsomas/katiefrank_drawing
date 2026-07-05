@@ -18,7 +18,25 @@ $monthTitle = $calendar->getMonthTitle();
     <main class="calendar-page">
         <header class="calendar-header">
             <div>
-                <p class="eyebrow"><?php echo htmlspecialchars($monthTitle, ENT_QUOTES, 'UTF-8'); ?></p>
+                <form class="eyebrow calendar-date-picker" method="get">
+                    <input type="hidden" name="month" value="<?php echo htmlspecialchars($calendar->getMonthKey(), ENT_QUOTES, 'UTF-8'); ?>">
+                    <label class="visually-hidden" for="calendar_month">Month</label>
+                    <select id="calendar_month" class="calendar-date-picker__select" name="calendar_month" onchange="this.form.month.value = this.form.calendar_year.value + '-' + this.value; this.form.calendar_month.disabled = true; this.form.calendar_year.disabled = true; this.form.submit();">
+                        <?php foreach ($calendar->getMonthOptions() as $monthValue => $monthLabel): ?>
+                            <option value="<?php echo htmlspecialchars($monthValue, ENT_QUOTES, 'UTF-8'); ?>"<?php echo $monthValue === $calendar->getSelectedMonthValue() ? ' selected' : ''; ?>>
+                                <?php echo htmlspecialchars($monthLabel, ENT_QUOTES, 'UTF-8'); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <label class="visually-hidden" for="calendar_year">Year</label>
+                    <select id="calendar_year" class="calendar-date-picker__select calendar-date-picker__select--year" name="calendar_year" onchange="this.form.month.value = this.value + '-' + this.form.calendar_month.value; this.form.calendar_month.disabled = true; this.form.calendar_year.disabled = true; this.form.submit();">
+                        <?php foreach ($calendar->getYearOptions() as $yearValue => $yearLabel): ?>
+                            <option value="<?php echo htmlspecialchars($yearValue, ENT_QUOTES, 'UTF-8'); ?>"<?php echo $yearValue === $calendar->getSelectedYearValue() ? ' selected' : ''; ?>>
+                                <?php echo htmlspecialchars($yearLabel, ENT_QUOTES, 'UTF-8'); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </form>
                 <h1>Drawing Calendar</h1>
             </div>
 
@@ -40,6 +58,10 @@ $monthTitle = $calendar->getMonthTitle();
                 <?php endif; ?>
 
                 <?php $thumbnailCount = count($cell['thumbnails']); ?>
+                <?php if ($thumbnailCount === 0): ?>
+                    <?php continue; ?>
+                <?php endif; ?>
+
                 <article class="date-card<?php echo $cell['isToday'] ? ' date-card--today' : ''; ?><?php echo $thumbnailCount > 0 ? ' date-card--has-thumbnails date-card--thumbnail-count-' . $thumbnailCount : ''; ?>">
                     <div class="date-card__header">
                         <span class="date-card__weekday"><?php echo $cell['weekday']; ?></span>
