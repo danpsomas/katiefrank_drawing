@@ -287,10 +287,10 @@ $modalFormfield = new formfield([
     <main class="admin-page">
         <header class="calendar-header">
             <div>
-                <form class="eyebrow calendar-date-picker" method="get">
+                <form class="eyebrow calendar-date-picker" method="get" autocomplete="off">
                     <input type="hidden" name="month" value="<?php echo h($calendar->getMonthKey()); ?>">
                     <label class="visually-hidden" for="calendar_month">Month</label>
-                    <select id="calendar_month" class="calendar-date-picker__select" name="calendar_month" onchange="this.form.month.value = this.form.calendar_year.value + '-' + this.value; this.form.calendar_month.disabled = true; this.form.calendar_year.disabled = true; this.form.submit();">
+                    <select id="calendar_month" class="calendar-date-picker__select" name="calendar_month" autocomplete="off" onchange="this.form.month.value = this.form.calendar_year.value + '-' + this.value; this.form.calendar_month.disabled = true; this.form.calendar_year.disabled = true; this.form.submit();">
                         <?php foreach ($calendar->getMonthOptions() as $monthValue => $monthLabel): ?>
                             <option value="<?php echo h($monthValue); ?>"<?php echo $monthValue === $calendar->getSelectedMonthValue() ? ' selected' : ''; ?>>
                                 <?php echo h($monthLabel); ?>
@@ -298,9 +298,9 @@ $modalFormfield = new formfield([
                         <?php endforeach; ?>
                     </select>
                     <label class="visually-hidden" for="calendar_year">Year</label>
-                    <select id="calendar_year" class="calendar-date-picker__select calendar-date-picker__select--year" name="calendar_year" onchange="this.form.month.value = this.value + '-' + this.form.calendar_month.value; this.form.calendar_month.disabled = true; this.form.calendar_year.disabled = true; this.form.submit();">
+                    <select id="calendar_year" class="calendar-date-picker__select calendar-date-picker__select--year" name="calendar_year" autocomplete="off" onchange="this.form.month.value = this.value + '-' + this.form.calendar_month.value; this.form.calendar_month.disabled = true; this.form.calendar_year.disabled = true; this.form.submit();">
                         <?php foreach ($calendar->getYearOptions() as $yearValue => $yearLabel): ?>
-                            <option value="<?php echo h($yearValue); ?>"<?php echo $yearValue === $calendar->getSelectedYearValue() ? ' selected' : ''; ?>>
+                            <option value="<?php echo h((string) $yearValue); ?>"<?php echo (string) $yearValue === $calendar->getSelectedYearValue() ? ' selected' : ''; ?>>
                                 <?php echo h($yearLabel); ?>
                             </option>
                         <?php endforeach; ?>

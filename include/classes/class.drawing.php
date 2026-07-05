@@ -76,15 +76,14 @@ class drawing
     public function getYearOptions(): array
     {
         $currentYear = (int) $this->today->format('Y');
+        $selectedYear = (int) $this->getSelectedYearValue();
         $earliestYear = $this->loadEarliestDrawingYear() ?? $currentYear;
-
-        if ($earliestYear > $currentYear) {
-            $earliestYear = $currentYear;
-        }
+        $startYear = min($earliestYear, $currentYear, $selectedYear);
+        $endYear = max($currentYear, $selectedYear);
 
         $years = [];
 
-        for ($year = $earliestYear; $year <= $currentYear; $year++) {
+        for ($year = $startYear; $year <= $endYear; $year++) {
             $years[(string) $year] = (string) $year;
         }
 
