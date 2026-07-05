@@ -90,6 +90,10 @@ img {
     text-transform: inherit;
 }
 
+.calendar-date-picker__select:not(.calendar-date-picker__select--year) {
+    min-width: calc(9ch + 50px);
+}
+
 .calendar-date-picker__select--year {
     min-width: calc(4ch + 35px);
 }

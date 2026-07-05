@@ -61,6 +61,21 @@ class drawing
         return $this->monthStart->format('Y');
     }
 
+    public function formatMonthOptionValue($monthValue): string
+    {
+        return sprintf('%02d', (int) $monthValue);
+    }
+
+    public function isSelectedMonthOption($monthValue): bool
+    {
+        return $this->formatMonthOptionValue($monthValue) === $this->getSelectedMonthValue();
+    }
+
+    public function isSelectedYearOption($yearValue): bool
+    {
+        return (string) $yearValue === $this->getSelectedYearValue();
+    }
+
     public function getMonthOptions(): array
     {
         $months = [];

@@ -79,17 +79,95 @@ function save_drawing(mysqli $mysqli, int $did, string $displayDate, int $hidden
     ];
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $did = filter_input(INPUT_POST, 'DID', FILTER_VALIDATE_INT);
-    $displayDate = normalize_display_date($_POST['display_date'] ?? '');
-    $hiddenFlag = isset($_POST['is_hidden']) && $_POST['is_hidden'] === '1' ? 1 : 0;
+function delete_drawing_files(string $filename): void
+{
+    if ($filename === '') {
+        return;
+    }
 
-    if (!$did) {
+    $origPath = __DIR__ . '/../drawings/orig/' . $filename;
+    if (is_file($origPath)) {
+        unlink($origPath);
+    }
+
+    $thumbPath = __DIR__ . '/../drawings/thumbs/' . $filename;
+    if (is_file($thumbPath)) {
+        unlink($thumbPath);
+    }
+
+    foreach (glob(__DIR__ . '/../drawings/sized/*.' . $filename) ?: [] as $sizedPath) {
+        if (is_file($sizedPath)) {
+            unlink($sizedPath);
+        }
+    }
+}
+
+function delete_drawing(mysqli $mysqli, int $did): array
+{
+    $statement = $mysqli->prepare('SELECT filename FROM drawing WHERE DID = ?');
+
+    if (!$statement) {
+        error_log('Drawing admin delete prepare failed: ' . $mysqli->error);
+        return ['success' => false, 'message' => 'Could not prepare the delete.', 'DID' => $did];
+    }
+
+    $filename = null;
+    $statement->bind_param('i', $did);
+    $statement->execute();
+    $statement->bind_result($filename);
+    $rowFound = $statement->fetch();
+    $statement->close();
+
+    if (!$rowFound) {
+        return ['success' => false, 'message' => 'Could not find that drawing.', 'DID' => $did];
+    }
+
+    $deleteStatement = $mysqli->prepare('DELETE FROM drawing WHERE DID = ?');
+
+    if (!$deleteStatement) {
+        error_log('Drawing admin delete prepare failed: ' . $mysqli->error);
+        return ['success' => false, 'message' => 'Could not prepare the delete.', 'DID' => $did];
+    }
+
+    $deleteStatement->bind_param('i', $did);
+
+    if (!$deleteStatement->execute()) {
+        error_log('Drawing admin delete failed: ' . $deleteStatement->error);
+        $deleteStatement->close();
+        return ['success' => false, 'message' => 'Could not delete the drawing.', 'DID' => $did];
+    }
+
+    $deleteStatement->close();
+    delete_drawing_files((string) $filename);
+
+    return [
+        'success' => true,
+        'message' => 'Deleted',
+        'DID' => $did,
+    ];
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? 'save';
+    $did = filter_input(INPUT_POST, 'DID', FILTER_VALIDATE_INT);
+
+    if ($action === 'delete') {
+        if (!$did) {
+            $saveResult = ['success' => false, 'message' => 'Could not identify the drawing to delete.', 'DID' => null];
+        } else {
+            $saveResult = delete_drawing($mysqli, $did);
+        }
+    } elseif (!$did) {
         $saveResult = ['success' => false, 'message' => 'Could not identify the drawing to update.', 'DID' => null];
-    } elseif (!$displayDate) {
-        $saveResult = ['success' => false, 'message' => 'Please enter the display date as YYYY-MM-DD.', 'DID' => $did];
     } else {
-        $saveResult = save_drawing($mysqli, $did, $displayDate, $hiddenFlag);
+        $displayDate = normalize_display_date($_POST['display_date'] ?? '');
+        $hiddenFlag = isset($_POST['is_hidden']) && $_POST['is_hidden'] === '1' ? 1 : 0;
+
+        if (!$displayDate) {
+            $saveResult = ['success' => false, 'message' => 'Please enter the display date as YYYY-MM-DD.', 'DID' => $did];
+        } else {
+            $saveResult = save_drawing($mysqli, $did, $displayDate, $hiddenFlag);
+        }
     }
 
     header('Content-Type: application/json');
@@ -276,6 +354,24 @@ $modalFormfield = new formfield([
             width: 100%;
         }
 
+        .admin-edit-modal__field-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .admin-edit-modal__delete {
+            color: var(--color-text-muted);
+            font-size: 0.9rem;
+            text-decoration: underline;
+        }
+
+        .admin-edit-modal__delete:hover,
+        .admin-edit-modal__delete:focus {
+            color: var(--color-text);
+        }
+
         @media (max-width: 760px) {
             .admin-edit-modal__panel {
                 grid-template-columns: 1fr;
@@ -292,7 +388,7 @@ $modalFormfield = new formfield([
                     <label class="visually-hidden" for="calendar_month">Month</label>
                     <select id="calendar_month" class="calendar-date-picker__select" name="calendar_month" autocomplete="off" onchange="this.form.month.value = this.form.calendar_year.value + '-' + this.value; this.form.calendar_month.disabled = true; this.form.calendar_year.disabled = true; this.form.submit();">
                         <?php foreach ($calendar->getMonthOptions() as $monthValue => $monthLabel): ?>
-                            <option value="<?php echo h($monthValue); ?>"<?php echo $monthValue === $calendar->getSelectedMonthValue() ? ' selected' : ''; ?>>
+                            <option value="<?php echo h($calendar->formatMonthOptionValue($monthValue)); ?>"<?php echo $calendar->isSelectedMonthOption($monthValue) ? ' selected' : ''; ?>>
                                 <?php echo h($monthLabel); ?>
                             </option>
                         <?php endforeach; ?>
@@ -300,7 +396,7 @@ $modalFormfield = new formfield([
                     <label class="visually-hidden" for="calendar_year">Year</label>
                     <select id="calendar_year" class="calendar-date-picker__select calendar-date-picker__select--year" name="calendar_year" autocomplete="off" onchange="this.form.month.value = this.value + '-' + this.form.calendar_month.value; this.form.calendar_month.disabled = true; this.form.calendar_year.disabled = true; this.form.submit();">
                         <?php foreach ($calendar->getYearOptions() as $yearValue => $yearLabel): ?>
-                            <option value="<?php echo h((string) $yearValue); ?>"<?php echo (string) $yearValue === $calendar->getSelectedYearValue() ? ' selected' : ''; ?>>
+                            <option value="<?php echo h((string) $yearValue); ?>"<?php echo $calendar->isSelectedYearOption($yearValue) ? ' selected' : ''; ?>>
                                 <?php echo h($yearLabel); ?>
                             </option>
                         <?php endforeach; ?>
@@ -397,13 +493,16 @@ $modalFormfield = new formfield([
                     ],
                 ]);
                 ?>
-                <?php
-                echo $modalFormfield->checkbox('is_hidden', [
-                    'id' => 'admin_is_hidden',
-                    'caption' => 'Hidden',
-                    'value' => '1',
-                ]);
-                ?>
+                <div class="admin-edit-modal__field-row">
+                    <?php
+                    echo $modalFormfield->checkbox('is_hidden', [
+                        'id' => 'admin_is_hidden',
+                        'caption' => 'Hidden',
+                        'value' => '1',
+                    ]);
+                    ?>
+                    <a class="admin-edit-modal__delete" href="#" data-admin-modal-delete>Delete</a>
+                </div>
                 <span class="admin-edit-modal__status" data-admin-modal-status aria-live="polite"></span>
             </form>
         </div>

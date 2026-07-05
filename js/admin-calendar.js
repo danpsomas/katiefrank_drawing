@@ -8,6 +8,7 @@ const adminUploadStatus = document.querySelector('[data-admin-upload-status]');
 const adminDidInput = adminForm ? adminForm.querySelector('input[name="DID"]') : null;
 const adminDateInput = adminForm ? adminForm.querySelector('input[name="display_date"]') : null;
 const adminHiddenInput = adminForm ? adminForm.querySelector('input[name="is_hidden"]') : null;
+const adminDeleteLink = document.querySelector('[data-admin-modal-delete]');
 let activeThumbnail = null;
 let saveInProgress = false;
 let savePending = false;
@@ -438,6 +439,51 @@ function saveActiveDrawing() {
     });
 }
 
+function deleteActiveDrawing() {
+    if (!activeThumbnail || !adminDidInput) {
+        return;
+    }
+
+    const did = adminDidInput.value;
+
+    if (!did) {
+        return;
+    }
+
+    if (!window.confirm('Delete this drawing permanently? This cannot be undone.')) {
+        return;
+    }
+
+    setModalStatus('Deleting...');
+
+    $.ajax({
+        url: window.location.href,
+        method: 'POST',
+        dataType: 'json',
+        data: {
+            action: 'delete',
+            DID: did,
+        },
+    }).done((response) => {
+        if (!response || String(response.DID) !== String(did)) {
+            setModalStatus('Delete response did not match this drawing.', true);
+            return;
+        }
+
+        if (!response.success) {
+            setModalStatus(response.message || 'Could not delete.', true);
+            return;
+        }
+
+        const cell = activeThumbnail.closest('[data-date-cell]');
+        activeThumbnail.remove();
+        updateCellState(cell);
+        closeAdminModal();
+    }).fail(() => {
+        setModalStatus('Could not delete.', true);
+    });
+}
+
 document.addEventListener('click', (event) => {
     const thumbnail = event.target.closest('[data-admin-thumbnail]');
 
@@ -472,6 +518,13 @@ if (adminForm) {
 
 if (adminModalClose) {
     adminModalClose.addEventListener('click', closeAdminModal);
+}
+
+if (adminDeleteLink) {
+    adminDeleteLink.addEventListener('click', (event) => {
+        event.preventDefault();
+        deleteActiveDrawing();
+    });
 }
 
 document.addEventListener('dragover', preventBrowserFileDrop);

@@ -23,7 +23,7 @@ $monthTitle = $calendar->getMonthTitle();
                     <label class="visually-hidden" for="calendar_month">Month</label>
                     <select id="calendar_month" class="calendar-date-picker__select" name="calendar_month" autocomplete="off" onchange="this.form.month.value = this.form.calendar_year.value + '-' + this.value; this.form.calendar_month.disabled = true; this.form.calendar_year.disabled = true; this.form.submit();">
                         <?php foreach ($calendar->getMonthOptions() as $monthValue => $monthLabel): ?>
-                            <option value="<?php echo htmlspecialchars($monthValue, ENT_QUOTES, 'UTF-8'); ?>"<?php echo $monthValue === $calendar->getSelectedMonthValue() ? ' selected' : ''; ?>>
+                            <option value="<?php echo htmlspecialchars($calendar->formatMonthOptionValue($monthValue), ENT_QUOTES, 'UTF-8'); ?>"<?php echo $calendar->isSelectedMonthOption($monthValue) ? ' selected' : ''; ?>>
                                 <?php echo htmlspecialchars($monthLabel, ENT_QUOTES, 'UTF-8'); ?>
                             </option>
                         <?php endforeach; ?>
@@ -31,7 +31,7 @@ $monthTitle = $calendar->getMonthTitle();
                     <label class="visually-hidden" for="calendar_year">Year</label>
                     <select id="calendar_year" class="calendar-date-picker__select calendar-date-picker__select--year" name="calendar_year" autocomplete="off" onchange="this.form.month.value = this.value + '-' + this.form.calendar_month.value; this.form.calendar_month.disabled = true; this.form.calendar_year.disabled = true; this.form.submit();">
                         <?php foreach ($calendar->getYearOptions() as $yearValue => $yearLabel): ?>
-                            <option value="<?php echo htmlspecialchars((string) $yearValue, ENT_QUOTES, 'UTF-8'); ?>"<?php echo (string) $yearValue === $calendar->getSelectedYearValue() ? ' selected' : ''; ?>>
+                            <option value="<?php echo htmlspecialchars((string) $yearValue, ENT_QUOTES, 'UTF-8'); ?>"<?php echo $calendar->isSelectedYearOption($yearValue) ? ' selected' : ''; ?>>
                                 <?php echo htmlspecialchars($yearLabel, ENT_QUOTES, 'UTF-8'); ?>
                             </option>
                         <?php endforeach; ?>
