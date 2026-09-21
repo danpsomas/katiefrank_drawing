@@ -104,6 +104,128 @@ function delete_drawing_row($mysqli, $DID) {
     $mysqli->query("DELETE FROM drawing WHERE DID = {$DID}");
 }
 
+function normalize_email_description($value) {
+    $value = trim((string)$value);
+    if ($value === '') {
+        return '';
+    }
+
+    return mb_substr($value, 0, 500);
+}
+
+function get_email_body_text($textBody, $htmlBody) {
+    $body = trim((string)$textBody);
+    if ($body !== '') {
+        return normalize_email_description($body);
+    }
+
+    $html = trim((string)$htmlBody);
+    if ($html === '') {
+        return '';
+    }
+
+    $plain = html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    return normalize_email_description($plain);
+}
+
+function merge_description($existing, $emailBody) {
+    $existing = trim((string)$existing);
+    $emailBody = trim((string)$emailBody);
+
+    if ($emailBody === '') {
+        return normalize_email_description($existing);
+    }
+
+    if ($existing === '') {
+        return normalize_email_description($emailBody);
+    }
+
+    if ($existing === $emailBody || strpos($existing, $emailBody) !== false) {
+        return normalize_email_description($existing);
+    }
+
+    return normalize_email_description($existing . "\n\n" . $emailBody);
+}
+
+function get_existing_description_for_date($mysqli, $displayDate) {
+    $statement = $mysqli->prepare("
+        SELECT description
+        FROM drawing
+        WHERE DATE(display_date) = ?
+            AND description IS NOT NULL
+            AND description != ''
+        LIMIT 1
+    ");
+
+    if (!$statement) {
+        throw new RuntimeException('Description lookup prepare failed: ' . $mysqli->error);
+    }
+
+    $statement->bind_param('s', $displayDate);
+    if (!$statement->execute()) {
+        $error = $statement->error;
+        $statement->close();
+        throw new RuntimeException('Description lookup failed: ' . $error);
+    }
+
+    $description = null;
+    $statement->bind_result($description);
+    $found = $statement->fetch();
+    $statement->close();
+
+    return $found ? (string)$description : '';
+}
+
+function update_descriptions_for_date($mysqli, $displayDate, $description) {
+    $statement = $mysqli->prepare('
+        UPDATE drawing
+        SET description = ?
+        WHERE DATE(display_date) = ?
+    ');
+
+    if (!$statement) {
+        throw new RuntimeException('Description update prepare failed: ' . $mysqli->error);
+    }
+
+    $statement->bind_param('ss', $description, $displayDate);
+    if (!$statement->execute()) {
+        $error = $statement->error;
+        $statement->close();
+        throw new RuntimeException('Description update failed: ' . $error);
+    }
+
+    $updatedRows = $statement->affected_rows;
+    $statement->close();
+
+    return $updatedRows;
+}
+
+function apply_email_body_to_dates($mysqli, array $displayDates, $emailBody) {
+    $emailBody = normalize_email_description($emailBody);
+    if ($emailBody === '' || $displayDates === []) {
+        return;
+    }
+
+    $uniqueDates = array_values(array_unique($displayDates));
+    foreach ($uniqueDates as $displayDate) {
+        $existing = get_existing_description_for_date($mysqli, $displayDate);
+        $merged = merge_description($existing, $emailBody);
+
+        if ($merged === normalize_email_description($existing)) {
+            continue;
+        }
+
+        $updatedRows = update_descriptions_for_date($mysqli, $displayDate, $merged);
+        write_email_log(sprintf(
+            "Description updated for %s. Rows updated: %d, Existing length: %d, New length: %d",
+            $displayDate,
+            $updatedRows,
+            strlen($existing),
+            strlen($merged)
+        ));
+    }
+}
+
 
 /*
 // Security check
@@ -258,6 +380,18 @@ foreach ($attachments as $attachment) {
 
 
 
+
+$emailBody = get_email_body_text($textBody, $htmlBody);
+if ($emailBody !== '' && $savedAttachments !== []) {
+    $displayDates = array_column($savedAttachments, 'displayDate');
+    try {
+        apply_email_body_to_dates($mysqli, $displayDates, $emailBody);
+    } catch (Throwable $e) {
+        write_email_log('Description update failed: ' . $e->getMessage());
+    }
+} elseif ($emailBody === '') {
+    write_email_log('Email body empty; description not updated.');
+}
 
 // Log
 write_email_log(sprintf(

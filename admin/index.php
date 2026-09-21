@@ -20,7 +20,18 @@ function normalize_display_date(string $value): ?string
     return $date->format('Y-m-d');
 }
 
-function save_drawing(mysqli $mysqli, int $did, string $displayDate, int $hiddenFlag): array
+function normalize_description(string $value): string
+{
+    $value = trim($value);
+
+    if ($value === '') {
+        return '';
+    }
+
+    return mb_substr($value, 0, 500);
+}
+
+function save_drawing(mysqli $mysqli, int $did, string $displayDate, int $hiddenFlag, string $description): array
 {
     $statement = $mysqli->prepare("
         UPDATE drawing
@@ -44,8 +55,29 @@ function save_drawing(mysqli $mysqli, int $did, string $displayDate, int $hidden
 
     $statement->close();
 
+    $descriptionStatement = $mysqli->prepare('
+        UPDATE drawing
+        SET description = ?
+        WHERE DATE(display_date) = ?
+    ');
+
+    if (!$descriptionStatement) {
+        error_log('Drawing admin description update prepare failed: ' . $mysqli->error);
+        return ['success' => false, 'message' => 'Could not prepare the description update.', 'DID' => $did];
+    }
+
+    $descriptionStatement->bind_param('ss', $description, $displayDate);
+
+    if (!$descriptionStatement->execute()) {
+        error_log('Drawing admin description update failed: ' . $descriptionStatement->error);
+        $descriptionStatement->close();
+        return ['success' => false, 'message' => 'Could not save the day description.', 'DID' => $did];
+    }
+
+    $descriptionStatement->close();
+
     $statusStatement = $mysqli->prepare("
-        SELECT filename, DATE(display_date) AS display_date, hidden
+        SELECT filename, DATE(display_date) AS display_date, hidden, description
         FROM drawing
         WHERE DID = ?
     ");
@@ -58,9 +90,10 @@ function save_drawing(mysqli $mysqli, int $did, string $displayDate, int $hidden
     $filename = null;
     $savedDisplayDate = null;
     $hidden = null;
+    $savedDescription = null;
     $statusStatement->bind_param('i', $did);
     $statusStatement->execute();
-    $statusStatement->bind_result($filename, $savedDisplayDate, $hidden);
+    $statusStatement->bind_result($filename, $savedDisplayDate, $hidden, $savedDescription);
     $rowFound = $statusStatement->fetch();
     $statusStatement->close();
 
@@ -76,6 +109,7 @@ function save_drawing(mysqli $mysqli, int $did, string $displayDate, int $hidden
         'filename' => $filename,
         'hidden' => $hidden,
         'is_hidden' => $hidden !== null && $hidden !== '',
+        'description' => (string) ($savedDescription ?? ''),
     ];
 }
 
@@ -162,11 +196,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $displayDate = normalize_display_date($_POST['display_date'] ?? '');
         $hiddenFlag = isset($_POST['is_hidden']) && $_POST['is_hidden'] === '1' ? 1 : 0;
+        $description = normalize_description($_POST['description'] ?? '');
 
         if (!$displayDate) {
             $saveResult = ['success' => false, 'message' => 'Please enter the display date as YYYY-MM-DD.', 'DID' => $did];
         } else {
-            $saveResult = save_drawing($mysqli, $did, $displayDate, $hiddenFlag);
+            $saveResult = save_drawing($mysqli, $did, $displayDate, $hiddenFlag, $description);
         }
     }
 
@@ -180,6 +215,7 @@ $monthTitle = $calendar->getMonthTitle();
 $modalFormfield = new formfield([
     'DID' => '',
     'display_date' => '',
+    'description' => '',
 ]);
 ?>
 <!doctype html>
@@ -209,7 +245,6 @@ $modalFormfield = new formfield([
 
         .admin-page .thumbnail-grid {
             width: 100%;
-            padding-left: 44px;
             grid-template-columns: repeat(auto-fit, 60px);
             grid-template-rows: none;
             grid-auto-rows: 60px;
@@ -350,7 +385,8 @@ $modalFormfield = new formfield([
             margin: 0;
         }
 
-        .admin-edit-modal input[name="display_date"] {
+        .admin-edit-modal input[name="display_date"],
+        .admin-edit-modal textarea[name="description"] {
             width: 100%;
         }
 
@@ -424,7 +460,7 @@ $modalFormfield = new formfield([
                 <?php endif; ?>
 
                 <?php $thumbnailCount = count($cell['thumbnails']); ?>
-                <article class="date-card<?php echo $cell['isToday'] ? ' date-card--today' : ''; ?><?php echo $thumbnailCount > 0 ? ' date-card--has-thumbnails date-card--thumbnail-count-' . $thumbnailCount : ''; ?>" data-date-cell="<?php echo h($cell['dateKey']); ?>">
+                <article class="date-card<?php echo $cell['isToday'] ? ' date-card--today' : ''; ?><?php echo $thumbnailCount > 0 ? ' date-card--has-thumbnails date-card--thumbnail-count-' . $thumbnailCount : ''; ?>" data-date-cell="<?php echo h($cell['dateKey']); ?>" data-day-description="<?php echo h($cell['description']); ?>">
                     <div class="date-card__header">
                         <span class="date-card__weekday"><?php echo $cell['weekday']; ?></span>
                         <time datetime="<?php echo h($cell['dateKey']); ?>"><?php echo $cell['day']; ?></time>
@@ -491,6 +527,12 @@ $modalFormfield = new formfield([
                         'inputmode' => 'numeric',
                         'pattern' => '\d{4}-\d{2}-\d{2}',
                     ],
+                ]);
+                echo $modalFormfield->textarea('description', [
+                    'id' => 'admin_description',
+                    'label' => 'Day Description',
+                    'placeholder_text' => 'Brief note for this day',
+                    'rows' => 3,
                 ]);
                 ?>
                 <div class="admin-edit-modal__field-row">

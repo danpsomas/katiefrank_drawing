@@ -1,94 +1,67 @@
 <?php
+
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 require_once __DIR__ . '/include/db_connect.php';
 require_once __DIR__ . '/include/classes/class.drawing.php';
+require_once __DIR__ . '/include/calendar_render.php';
 
 $calendar = new drawing($_GET['month'] ?? null);
 $monthTitle = $calendar->getMonthTitle();
+$earliestMonth = drawing::getEarliestMonthKey($mysqli);
 ?>
 <!doctype html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?php echo htmlspecialchars($monthTitle, ENT_QUOTES, 'UTF-8'); ?> Drawings</title>
+    <title><?php echo calendar_h($monthTitle); ?> Drawings</title>
     <link rel="stylesheet" href="common/style.css">
     <script src="js/calendar-modal.js" defer></script>
+    <script src="js/calendar-infinite.js" defer></script>
 </head>
 <body>
     <main class="calendar-page">
         <header class="calendar-header">
-            <div>
-                <form class="eyebrow calendar-date-picker" method="get" autocomplete="off">
-                    <input type="hidden" name="month" value="<?php echo htmlspecialchars($calendar->getMonthKey(), ENT_QUOTES, 'UTF-8'); ?>">
+            <div class="calendar-header__inner">
+                <form class="eyebrow calendar-date-picker" method="get" autocomplete="off" data-calendar-date-picker>
+                    <input type="hidden" name="month" value="<?php echo calendar_h($calendar->getMonthKey()); ?>">
                     <label class="visually-hidden" for="calendar_month">Month</label>
-                    <select id="calendar_month" class="calendar-date-picker__select" name="calendar_month" autocomplete="off" onchange="this.form.month.value = this.form.calendar_year.value + '-' + this.value; this.form.calendar_month.disabled = true; this.form.calendar_year.disabled = true; this.form.submit();">
+                    <select id="calendar_month" class="calendar-date-picker__select" name="calendar_month" autocomplete="off">
                         <?php foreach ($calendar->getMonthOptions() as $monthValue => $monthLabel): ?>
-                            <option value="<?php echo htmlspecialchars($calendar->formatMonthOptionValue($monthValue), ENT_QUOTES, 'UTF-8'); ?>"<?php echo $calendar->isSelectedMonthOption($monthValue) ? ' selected' : ''; ?>>
-                                <?php echo htmlspecialchars($monthLabel, ENT_QUOTES, 'UTF-8'); ?>
+                            <option value="<?php echo calendar_h($calendar->formatMonthOptionValue($monthValue)); ?>"<?php echo $calendar->isSelectedMonthOption($monthValue) ? ' selected' : ''; ?>>
+                                <?php echo calendar_h($monthLabel); ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
                     <label class="visually-hidden" for="calendar_year">Year</label>
-                    <select id="calendar_year" class="calendar-date-picker__select calendar-date-picker__select--year" name="calendar_year" autocomplete="off" onchange="this.form.month.value = this.value + '-' + this.form.calendar_month.value; this.form.calendar_month.disabled = true; this.form.calendar_year.disabled = true; this.form.submit();">
+                    <select id="calendar_year" class="calendar-date-picker__select calendar-date-picker__select--year" name="calendar_year" autocomplete="off">
                         <?php foreach ($calendar->getYearOptions() as $yearValue => $yearLabel): ?>
-                            <option value="<?php echo htmlspecialchars((string) $yearValue, ENT_QUOTES, 'UTF-8'); ?>"<?php echo $calendar->isSelectedYearOption($yearValue) ? ' selected' : ''; ?>>
-                                <?php echo htmlspecialchars($yearLabel, ENT_QUOTES, 'UTF-8'); ?>
+                            <option value="<?php echo calendar_h((string) $yearValue); ?>"<?php echo $calendar->isSelectedYearOption($yearValue) ? ' selected' : ''; ?>>
+                                <?php echo calendar_h($yearLabel); ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
                 </form>
                 <h1>Drawing Calendar</h1>
             </div>
-
-            <nav class="calendar-nav" aria-label="Calendar months">
-                <a href="?month=<?php echo htmlspecialchars($calendar->getPreviousMonthKey(), ENT_QUOTES, 'UTF-8'); ?>">Previous</a>
-                <a href="?month=<?php echo htmlspecialchars($calendar->getNextMonthKey(), ENT_QUOTES, 'UTF-8'); ?>">Next</a>
-            </nav>
         </header>
 
-        <section class="month-grid" aria-label="<?php echo htmlspecialchars($calendar->getCalendarLabel(), ENT_QUOTES, 'UTF-8'); ?>">
-            <?php foreach ($calendar->getWeekdays() as $weekday): ?>
-                <div class="weekday" aria-hidden="true"><?php echo $weekday; ?></div>
-            <?php endforeach; ?>
+        <div
+            class="calendar-feed"
+            data-calendar-feed
+            data-initial-month="<?php echo calendar_h($calendar->getMonthKey()); ?>"
+            data-current-month="<?php echo calendar_h($calendar->getCurrentMonthKey()); ?>"
+            data-earliest-month="<?php echo calendar_h($earliestMonth ?? $calendar->getMonthKey()); ?>"
+        >
+            <p class="calendar-feed-status calendar-feed-status--top" data-calendar-feed-status-top aria-live="polite" hidden></p>
+            <div class="calendar-scroll-sentinel calendar-scroll-sentinel--next" data-calendar-sentinel="next" aria-hidden="true"></div>
+            <?php render_public_calendar_month($calendar); ?>
+            <div class="calendar-scroll-sentinel calendar-scroll-sentinel--previous" data-calendar-sentinel="previous" aria-hidden="true"></div>
+        </div>
 
-            <?php foreach ($calendar->getCalendarCells() as $cell): ?>
-                <?php if ($cell === null): ?>
-                    <div class="date-card date-card--empty" aria-hidden="true"></div>
-                    <?php continue; ?>
-                <?php endif; ?>
-
-                <?php $thumbnailCount = count($cell['thumbnails']); ?>
-                <?php if ($thumbnailCount === 0): ?>
-                    <?php continue; ?>
-                <?php endif; ?>
-
-                <article class="date-card<?php echo $cell['isToday'] ? ' date-card--today' : ''; ?><?php echo $thumbnailCount > 0 ? ' date-card--has-thumbnails date-card--thumbnail-count-' . $thumbnailCount : ''; ?>">
-                    <div class="date-card__header">
-                        <span class="date-card__weekday"><?php echo $cell['weekday']; ?></span>
-                        <time datetime="<?php echo $cell['dateKey']; ?>"><?php echo $cell['day']; ?></time>
-                    </div>
-
-                    <?php if ($cell['thumbnails']): ?>
-                        <div class="thumbnail-grid thumbnail-grid--count-<?php echo $thumbnailCount; ?>" aria-label="Drawings for <?php echo htmlspecialchars($cell['fullDate'], ENT_QUOTES, 'UTF-8'); ?>">
-                            <?php foreach ($cell['thumbnails'] as $index => $thumb): ?>
-                                <?php $imageAlt = 'Drawing ' . ($index + 1) . ' for ' . $cell['fullDate']; ?>
-                                <a
-                                    href="drawings/sized/1200_1200.<?php echo htmlspecialchars(basename($thumb), ENT_QUOTES, 'UTF-8'); ?>"
-                                    data-modal-image
-                                    data-modal-alt="<?php echo htmlspecialchars($imageAlt, ENT_QUOTES, 'UTF-8'); ?>"
-                                >
-                                    <img
-                                        src="<?php echo htmlspecialchars($thumb, ENT_QUOTES, 'UTF-8'); ?>"
-                                        alt="<?php echo htmlspecialchars($imageAlt, ENT_QUOTES, 'UTF-8'); ?>"
-                                        loading="lazy"
-                                    >
-                                </a>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php endif; ?>
-                </article>
-            <?php endforeach; ?>
-        </section>
+        <p class="calendar-feed-status" data-calendar-feed-status aria-live="polite"></p>
     </main>
 
     <div class="image-modal" data-image-modal role="dialog" aria-modal="true" aria-label="Drawing preview" hidden>

@@ -6,6 +6,7 @@ class drawing
     private DateTimeImmutable $monthStart;
     private DateTimeImmutable $monthEnd;
     private array $thumbnailsByDate;
+    private array $descriptionsByDate;
     private ?mysqli $mysqli;
     private bool $includeHidden;
 
@@ -18,6 +19,7 @@ class drawing
         $this->today = new DateTimeImmutable('today');
         $this->monthStart = $this->resolveMonthStart($month);
         $this->monthEnd = $this->monthStart->modify('last day of this month');
+        $this->descriptionsByDate = [];
         $this->thumbnailsByDate = $thumbnailsByDate ?? $this->loadThumbnailsByDate();
     }
 
@@ -49,6 +51,55 @@ class drawing
     public function getNextMonthKey(): string
     {
         return $this->monthStart->modify('+1 month')->format('Y-m');
+    }
+
+    public function getCurrentMonthKey(): string
+    {
+        return $this->today->format('Y-m');
+    }
+
+    public function hasVisibleDrawings(): bool
+    {
+        foreach ($this->getCalendarCells() as $cell) {
+            if ($cell !== null && count($cell['thumbnails']) > 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static function getEarliestMonthKey(?mysqli $mysqli, bool $includeHidden = false): ?string
+    {
+        if (!$mysqli || $mysqli->connect_errno) {
+            return null;
+        }
+
+        $hiddenClause = $includeHidden ? '' : 'AND hidden IS NULL';
+        $sql = "
+            SELECT DATE_FORMAT(MIN(display_date), '%Y-%m') AS earliest_month
+            FROM drawing
+            WHERE display_date IS NOT NULL
+                AND filename IS NOT NULL
+                AND filename != ''
+                {$hiddenClause}
+        ";
+
+        $result = $mysqli->query($sql);
+
+        if (!$result) {
+            error_log('Drawing earliest month query failed: ' . $mysqli->error);
+            return null;
+        }
+
+        $row = $result->fetch_assoc();
+        $result->free();
+
+        if (empty($row['earliest_month'])) {
+            return null;
+        }
+
+        return (string) $row['earliest_month'];
     }
 
     public function getSelectedMonthValue(): string
@@ -192,6 +243,7 @@ class drawing
             'day' => $date->format('j'),
             'weekday' => $date->format('D'),
             'fullDate' => $date->format('F j'),
+            'description' => $this->descriptionsByDate[$dateKey] ?? '',
             'thumbnails' => $thumbnails,
             'isToday' => $dateKey === $this->today->format('Y-m-d'),
         ];
@@ -208,7 +260,7 @@ class drawing
         $nextMonthDate = $this->monthStart->modify('+1 month')->format('Y-m-d');
         $hiddenClause = $this->includeHidden ? '' : 'AND hidden IS NULL';
         $sql = "
-            SELECT DID, orig_name, DATE(display_date) AS display_date, filename, hidden
+            SELECT DID, orig_name, DATE(display_date) AS display_date, filename, hidden, description
             FROM drawing
             WHERE display_date >= ?
                 AND display_date < ?
@@ -231,10 +283,15 @@ class drawing
             return [];
         }
 
-        $statement->bind_result($did, $origName, $displayDate, $filename, $hidden);
+        $statement->bind_result($did, $origName, $displayDate, $filename, $hidden, $description);
         $thumbnailsByDate = [];
+        $descriptionsByDate = [];
 
         while ($statement->fetch()) {
+            if (!isset($descriptionsByDate[$displayDate])) {
+                $descriptionsByDate[$displayDate] = (string) ($description ?? '');
+            }
+
             if ($this->includeHidden) {
                 $thumbnailsByDate[$displayDate][] = [
                     'DID' => (int) $did,
@@ -243,6 +300,7 @@ class drawing
                     'filename' => $filename,
                     'hidden' => $hidden,
                     'isHidden' => $hidden !== null && $hidden !== '',
+                    'description' => $descriptionsByDate[$displayDate],
                     'thumbPath' => 'drawings/thumbs/' . $filename,
                     'sizedPath' => 'drawings/sized/1200_1200.' . $filename,
                 ];
@@ -253,6 +311,7 @@ class drawing
         }
 
         $statement->close();
+        $this->descriptionsByDate = $descriptionsByDate;
 
         return $thumbnailsByDate;
     }

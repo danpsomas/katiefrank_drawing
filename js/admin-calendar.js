@@ -8,6 +8,7 @@ const adminUploadStatus = document.querySelector('[data-admin-upload-status]');
 const adminDidInput = adminForm ? adminForm.querySelector('input[name="DID"]') : null;
 const adminDateInput = adminForm ? adminForm.querySelector('input[name="display_date"]') : null;
 const adminHiddenInput = adminForm ? adminForm.querySelector('input[name="is_hidden"]') : null;
+const adminDescriptionInput = adminForm ? adminForm.querySelector('textarea[name="description"]') : null;
 const adminDeleteLink = document.querySelector('[data-admin-modal-delete]');
 let activeThumbnail = null;
 let saveInProgress = false;
@@ -316,8 +317,29 @@ function initializeCalendarDropzones() {
     });
 }
 
+function getDateCellDescription(displayDate) {
+    const cell = document.querySelector(`[data-date-cell="${displayDate}"]`);
+
+    if (!cell) {
+        return '';
+    }
+
+    return cell.dataset.dayDescription || '';
+}
+
+function setDateCellDescription(displayDate, description) {
+    const cell = document.querySelector(`[data-date-cell="${displayDate}"]`);
+
+    if (!cell) {
+        return;
+    }
+
+    cell.dataset.dayDescription = description;
+}
+
 function fillModalFromThumbnail(thumbnail) {
     activeThumbnail = thumbnail;
+    const displayDate = thumbnail.dataset.displayDate || '';
 
     if (adminModalImage) {
         adminModalImage.src = thumbnail.href;
@@ -337,11 +359,15 @@ function fillModalFromThumbnail(thumbnail) {
     }
 
     if (adminDateInput) {
-        adminDateInput.value = thumbnail.dataset.displayDate || '';
+        adminDateInput.value = displayDate;
     }
 
     if (adminHiddenInput) {
         adminHiddenInput.checked = thumbnail.dataset.hidden === '1';
+    }
+
+    if (adminDescriptionInput) {
+        adminDescriptionInput.value = getDateCellDescription(displayDate);
     }
 
     setModalStatus('');
@@ -401,6 +427,7 @@ function saveActiveDrawing() {
             DID: adminDidInput.value,
             display_date: adminDateInput.value,
             is_hidden: adminHiddenInput.checked ? '1' : '0',
+            description: adminDescriptionInput ? adminDescriptionInput.value : '',
         },
     }).done((response) => {
         if (!response || String(response.DID) !== String(adminDidInput.value)) {
@@ -415,12 +442,19 @@ function saveActiveDrawing() {
 
         const isHidden = Boolean(response.is_hidden);
         const displayDate = response.display_date || adminDateInput.value;
+        const description = typeof response.description === 'string' ? response.description : '';
 
         adminDateInput.value = displayDate;
         adminHiddenInput.checked = isHidden;
+
+        if (adminDescriptionInput) {
+            adminDescriptionInput.value = description;
+        }
+
         activeThumbnail.dataset.displayDate = displayDate;
         activeThumbnail.dataset.filename = response.filename || activeThumbnail.dataset.filename || '';
         setThumbnailHidden(activeThumbnail, isHidden, response.hidden || '');
+        setDateCellDescription(displayDate, description);
         const remainsInCurrentMonth = moveThumbnailToDate(activeThumbnail, displayDate);
         setModalStatus(response.message || 'Saved');
 
@@ -510,9 +544,19 @@ if (adminForm) {
     });
 
     adminForm.addEventListener('change', (event) => {
-        if (event.target.matches('input[name="display_date"], input[name="is_hidden"]')) {
+        if (event.target.matches('input[name="is_hidden"], textarea[name="description"]')) {
             saveActiveDrawing();
         }
+    });
+}
+
+if (adminDateInput) {
+    adminDateInput.addEventListener('change', () => {
+        if (adminDescriptionInput) {
+            adminDescriptionInput.value = getDateCellDescription(adminDateInput.value);
+        }
+
+        saveActiveDrawing();
     });
 }
 

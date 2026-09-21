@@ -3,14 +3,19 @@ const modalImage = document.querySelector('[data-image-modal-image]');
 const closeButton = document.querySelector('[data-image-modal-close]');
 const previousButton = document.querySelector('[data-image-modal-previous]');
 const nextButton = document.querySelector('[data-image-modal-next]');
-const imageTriggers = Array.from(document.querySelectorAll('[data-modal-image]'));
 let activeTrigger = null;
 let currentImageIndex = -1;
+
+function getImageTriggers() {
+    return Array.from(document.querySelectorAll('[data-modal-image]'));
+}
 
 function updateNavigation() {
     if (!previousButton || !nextButton) {
         return;
     }
+
+    const imageTriggers = getImageTriggers();
 
     previousButton.disabled = currentImageIndex <= 0;
     nextButton.disabled = currentImageIndex >= imageTriggers.length - 1;
@@ -38,6 +43,7 @@ function showImage(index) {
         return;
     }
 
+    const imageTriggers = getImageTriggers();
     const trigger = imageTriggers[index];
 
     if (!trigger) {
@@ -51,6 +57,7 @@ function showImage(index) {
 }
 
 function openModal(trigger) {
+    const imageTriggers = getImageTriggers();
     const index = imageTriggers.indexOf(trigger);
 
     if (index === -1) {
@@ -73,6 +80,24 @@ function showPreviousImage() {
 function showNextImage() {
     showImage(currentImageIndex + 1);
 }
+
+window.refreshCalendarModalTriggers = function refreshCalendarModalTriggers() {
+    if (!modal || modal.hidden || !activeTrigger) {
+        updateNavigation();
+        return;
+    }
+
+    const imageTriggers = getImageTriggers();
+    const nextIndex = imageTriggers.indexOf(activeTrigger);
+
+    if (nextIndex === -1) {
+        closeModal();
+        return;
+    }
+
+    currentImageIndex = nextIndex;
+    updateNavigation();
+};
 
 document.addEventListener('click', (event) => {
     const trigger = event.target.closest('[data-modal-image]');

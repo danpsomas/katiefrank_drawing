@@ -1,2 +1,2 @@
-php_value include_path "C:/Clients/katiefrank/include/"
+php_value include_path "D:/Clients/katie/katiefrank_drawing/include/"
 php_value short_open_tag off
