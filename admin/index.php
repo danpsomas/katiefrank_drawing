@@ -236,7 +236,7 @@ $modalFormfield = new formfield([
         .admin-page {
             width: min(1200px, calc(100% - 32px));
             margin: 0 auto;
-            padding: 40px 0;
+            padding: var(--calendar-header-offset) 0 40px;
         }
 
         .admin-thumbnail {

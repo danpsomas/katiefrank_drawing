@@ -1,3 +1,4 @@
+const calendarHeader = document.querySelector('.calendar-header');
 const adminModal = document.querySelector('[data-admin-edit-modal]');
 const adminModalImage = document.querySelector('[data-admin-modal-image]');
 const adminModalMeta = document.querySelector('[data-admin-modal-meta]');
@@ -574,3 +575,18 @@ if (adminDeleteLink) {
 document.addEventListener('dragover', preventBrowserFileDrop);
 document.addEventListener('drop', preventBrowserFileDrop);
 initializeCalendarDropzones();
+
+function updateCalendarHeaderOffset() {
+    if (!calendarHeader) {
+        return;
+    }
+
+    document.documentElement.style.setProperty(
+        '--calendar-header-offset',
+        `${calendarHeader.offsetHeight + 24}px`
+    );
+}
+
+updateCalendarHeaderOffset();
+window.addEventListener('resize', updateCalendarHeaderOffset);
+window.addEventListener('load', updateCalendarHeaderOffset);
